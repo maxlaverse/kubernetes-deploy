@@ -26,7 +26,7 @@ module FixtureDeployHelper
   #     pod = fixtures["unmanaged-pod.yml.erb"]["Pod"].first
   #     pod["spec"]["containers"].first["image"] = "hello-world:thisImageIsBad"
   #   end
-  def deploy_fixtures(set, subset: nil, wait: true, allow_protected_ns: false, prune: true, bindings: {}, sha: nil)
+  def deploy_fixtures(set, subset: nil, wait: true, allow_protected_ns: false, prune: true, bindings: {}, sha: nil, partial_rollout_success: nil)
     fixtures = load_fixtures(set, subset)
     raise "Cannot deploy empty template set" if fixtures.empty?
 
@@ -36,7 +36,7 @@ module FixtureDeployHelper
     Dir.mktmpdir("fixture_dir") do |target_dir|
       write_fixtures_to_dir(fixtures, target_dir)
       success = deploy_dir(target_dir, wait: wait, allow_protected_ns: allow_protected_ns,
-        prune: prune, bindings: bindings, sha: sha)
+        prune: prune, bindings: bindings, sha: sha, partial_rollout_success: partial_rollout_success)
     end
     success
   end
@@ -45,7 +45,7 @@ module FixtureDeployHelper
     deploy_dir(fixture_path(set), wait: wait, bindings: bindings)
   end
 
-  def deploy_dir_without_profiling(dir, wait: true, allow_protected_ns: false, prune: true, bindings: {}, sha: nil)
+  def deploy_dir_without_profiling(dir, wait: true, allow_protected_ns: false, prune: true, bindings: {}, sha: nil, partial_rollout_success: nil)
     current_sha = sha || SecureRandom.hex(6)
     runner = KubernetesDeploy::Runner.new(
       namespace: @namespace,
@@ -54,7 +54,8 @@ module FixtureDeployHelper
       template_dir: dir,
       logger: logger,
       kubectl_instance: build_kubectl,
-      bindings: bindings
+      bindings: bindings,
+      partial_rollout_success: partial_rollout_success
     )
     runner.run(
       verify_result: wait,

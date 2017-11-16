@@ -3,7 +3,7 @@ module KubernetesDeploy
   class Pod < KubernetesResource
     TIMEOUT = 10.minutes
 
-    def initialize(namespace:, context:, definition:, logger:, parent: nil, deploy_started: nil)
+    def initialize(namespace:, context:, definition:, logger:, parent: nil, deploy_started: nil, partial_rollout_success: nil)
       @parent = parent
       @deploy_started = deploy_started
       @containers = definition.fetch("spec", {}).fetch("containers", []).map { |c| Container.new(c) }

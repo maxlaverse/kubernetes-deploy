@@ -74,7 +74,7 @@ module KubernetesDeploy
 
     NOT_FOUND_ERROR = 'NotFound'
 
-    def initialize(namespace:, context:, current_sha:, template_dir:, logger:, kubectl_instance: nil, bindings: {})
+    def initialize(namespace:, context:, current_sha:, template_dir:, logger:, kubectl_instance: nil, bindings: {}, partial_rollout_success: nil)
       @namespace = namespace
       @context = context
       @current_sha = current_sha
@@ -84,6 +84,7 @@ module KubernetesDeploy
       @bindings = bindings
       # Max length of podname is only 63chars so try to save some room by truncating sha to 8 chars
       @id = current_sha[0...8] + "-#{SecureRandom.hex(4)}" if current_sha
+      @partial_rollout_success = partial_rollout_success
     end
 
     def run(verify_result: true, allow_protected_ns: false, prune: true)
@@ -207,7 +208,7 @@ module KubernetesDeploy
         next unless filename.end_with?(".yml.erb", ".yml", ".yaml", ".yaml.erb")
 
         split_templates(filename) do |r_def|
-          r = KubernetesResource.build(namespace: @namespace, context: @context, logger: @logger, definition: r_def)
+          r = KubernetesResource.build(namespace: @namespace, context: @context, logger: @logger, definition: r_def, partial_rollout_success: @partial_rollout_success)
           resources << r
           @logger.info "  - #{r.id}"
         end

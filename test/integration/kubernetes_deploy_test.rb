@@ -571,6 +571,22 @@ class KubernetesDeployTest < KubernetesDeploy::IntegrationTest
     ])
   end
 
+  def test_can_deploy_deployment_with_partial_rollout_success
+    result = deploy_fixtures("hello-cloud", subset: ["configmap-data.yml", "web.yml.erb"], partial_rollout_success: 2) do |fixtures|
+      web = fixtures["web.yml.erb"]["Deployment"].first
+      web["spec"]["replicas"] = 4
+    end
+    assert_deploy_success(result)
+
+    pods = kubeclient.get_pods(namespace: @namespace)
+    assert_equal 2, pods.length, "Pods were running from zero-replica deployment"
+
+    assert_logs_match_all([
+      %r{Service/web\s+Selects 2 pods},
+      %r{Deployment/web\s+4 replicas}
+    ])
+  end
+
   def test_deploy_aborts_immediately_if_metadata_name_missing
     result = deploy_fixtures("hello-cloud", subset: ["configmap-data.yml"]) do |fixtures|
       definition = fixtures["configmap-data.yml"]["ConfigMap"].first

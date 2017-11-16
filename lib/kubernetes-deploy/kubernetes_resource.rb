@@ -22,8 +22,8 @@ module KubernetesDeploy
       If you have reason to believe it will succeed, retry the deploy to continue to monitor the rollout.
       MSG
 
-    def self.build(namespace:, context:, definition:, logger:)
-      opts = { namespace: namespace, context: context, definition: definition, logger: logger }
+    def self.build(namespace:, context:, definition:, logger:, partial_rollout_success: nil)
+      opts = { namespace: namespace, context: context, definition: definition, logger: logger, partial_rollout_success: partial_rollout_success }
       if KubernetesDeploy.const_defined?(definition["kind"])
         klass = KubernetesDeploy.const_get(definition["kind"])
         klass.new(**opts)
@@ -42,7 +42,7 @@ module KubernetesDeploy
       self.class.timeout
     end
 
-    def initialize(namespace:, context:, definition:, logger:)
+    def initialize(namespace:, context:, definition:, logger:, partial_rollout_success: nil)
       # subclasses must also set these if they define their own initializer
       @name = definition.dig("metadata", "name")
       unless @name.present?
@@ -56,6 +56,7 @@ module KubernetesDeploy
       @definition = definition
       @statsd_report_done = false
       @validation_error_msg = nil
+      @partial_rollout_success = partial_rollout_success
     end
 
     def validate_definition
